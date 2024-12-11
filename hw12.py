@@ -26,3 +26,21 @@ class MNIST_dataset(Dataset):
         label = int(path.split('/')[-2])
 
         return image, tensor(label)
+
+
+def make_loader(subfolder: str):
+    dataset = MNIST_dataset(f"mnist_png/{subfolder}")
+    return DataLoader(dataset, batch_size=64, shuffle=True)
+
+
+###########
+# Program #
+###########
+
+def main():
+    train = make_loader('train')
+    val = make_loader('valid')
+
+
+if __name__ == "__main__":
+    main()

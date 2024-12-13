@@ -1,9 +1,9 @@
 import os
 import re
 from sys import argv
-from hw12 import MyConvModel, grab_image
+from hw12 import MyConvModel
 from torch import argmax, load
-from pathlib import Path
+from torchvision.io import read_image
 
 
 #############
@@ -25,6 +25,12 @@ def best_weights_path():
     return max(weights_paths(), key=lambda x: x[2])[0]
 
 
+def grab_image(path):
+    image = read_image(path)
+    grayscale = image.squeeze(dim=0) / 255
+    return grayscale.unsqueeze(dim=0)
+
+
 def main():
     if len(argv) == 1:
         print(f"Usage: py {argv[0]} <filepaths to predict>")
@@ -33,19 +39,33 @@ def main():
     model = MyConvModel()
     path = best_weights_path()
     print(f"Loading model from {path}")
-    model.load_state_dict(load(path))
+    model.load_state_dict(load(path, weights_only=True))
     model.eval()
 
     image_paths = argv[1:]
-    images = map(lambda path: grab_image(Path(path)), image_paths)
 
-    for image, y in images:
+    for image in map(grab_image, image_paths):
         pred = argmax(model.forward(image)).item()
-        print(pred, end="")
-        if pred != y:
-            print(f" (Expected {y})", end="")
-        print()
+        print(pred)
 
 
 if __name__ == "__main__":
     main()
+
+# Analysis of digits from HW 11:
+# $ python .\hw12_detect.py .\my_images\4.png .\my_images\7.png .\my_images\3.png
+# 4
+# 7
+# 2
+#
+# The model only got the off-center 3 wrong.
+# The placement of the digit is indeed important to the result.
+# If I take that same 3 and shift it into the center, it is able to identify it correctly.
+# I through in the center dash in the 7 to try to trick it, but it still identified it correctly.
+# This makes me incredible curious as to how OCR works seeing as it's able to identify
+# characters quite accurately in far worse conditions.
+# After the model loads it does run practically instantly, so the performance of the
+# forward propagation is quite good speed wise (albeit this is a smaller model).
+#
+# I also drew an 'f' just to see how it would classify it and it guesses 7, which seems
+# like a pretty reasonable guess.
